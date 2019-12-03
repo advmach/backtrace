@@ -7,6 +7,7 @@
  */
 
 #include <backtrace.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -339,6 +340,24 @@ static int unwind_frame(backtrace_frame_t *frame)
 	return 1;
 }
 
+static bool addr_in_text(uint32_t addr)
+{
+	extern const void __text_start;
+	extern const void __etext;
+	const void* p = (void*)addr;
+
+	return p >= &__text_start && p < &__etext;
+}
+
+static bool addr_in_ram(uint32_t addr)
+{
+	extern const void _estack;
+	extern const void __data_start__;
+	const void* p = (void*)addr;
+
+	return p >= &__data_start__ && p < &_estack;
+}
+
 int _backtrace_unwind(backtrace_t *buffer, int size, backtrace_frame_t *frame)
 {
 	int count = 0;
@@ -357,6 +376,13 @@ int _backtrace_unwind(backtrace_t *buffer, int size, backtrace_frame_t *frame)
 		if (frame->pc == 0x00000001) {
 			/* Reached .cantunwind instruction. */
 			buffer[count++].name = "<reached .cantunwind>";
+			break;
+		}
+
+		if(!addr_in_text(frame->pc)
+		   || !addr_in_ram(frame->sp)
+		   || !addr_in_ram(frame->fp)) {
+			buffer[count++].name = "<reached invalid address>";
 			break;
 		}
 
