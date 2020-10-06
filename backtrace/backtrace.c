@@ -380,8 +380,7 @@ int _backtrace_unwind(backtrace_t *buffer, int size, backtrace_frame_t *frame)
 		}
 
 		if(!addr_in_text(frame->pc)
-		   || !addr_in_ram(frame->sp)
-		   || !addr_in_ram(frame->fp)) {
+		   || !addr_in_ram(frame->sp)) {
 			buffer[count++].name = "<reached invalid address>";
 			break;
 		}
